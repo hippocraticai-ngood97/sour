@@ -68,23 +68,6 @@ func NewRouter(log *slog.Logger, svc ServiceInterface, opts ...RouterOption) *Ro
 	return r
 }
 
-// metricsServer returns nil if metrics are disabled.
-func (r *Router) metricsServer(servicePort int) *http.Server {
-	if r.metrics == nil {
-		return nil
-	}
-	port := r.metrics.Port()
-	if port == 0 {
-		port = servicePort + MetricsPortOffset
-	}
-	mux := http.NewServeMux()
-	mux.Handle("GET "+r.metrics.Path(), r.metrics.Handler())
-	return &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
-	}
-}
-
 func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	response.NotFound(w, "")
 }
