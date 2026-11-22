@@ -11,9 +11,32 @@ go mod init <your module>
 go install github.com/smw1218/sour@latest
 # service name is "music"
 sour service --name music
-# domain name is "Albums"
-sour service --name music --domain Albums
+# domain name is "Albums", added to the "music" service
+sour service domain --name music --domain Albums
 ```
+
+This generates:
+```
+cmd/
+  music-service/
+    main.go          # service entrypoint
+    app/service.go   # service setup and RegisterRoutes
+    albums/handlers.go
+  local-proxy/
+    main.go          # reverse proxy that routes to all services
+    servicelist/services.go
+```
+
+Each service runs on its own port. Run a service with `go run ./cmd/music-service` and the proxy with
+`go run ./cmd/local-proxy` (default port 8080, use `--port` to change it, or `--<service name> <url>` to
+send a service's routes somewhere other than localhost).
+
+## Commands
+
+| Command | Description |
+| --- | --- |
+| `sour service --name <name>` | Creates a new service in `cmd/<name>-service` and adds it to the local proxy |
+| `sour service domain --name <name> --domain <Domain>` | Creates a domain package with a handlers struct in an existing service. `<Domain>` must be a valid exported Go type name, e.g. `PetFood` |
 
 ## WTF is a Domain
 This is something that you business logic code needs to do. In a REST API this would correspond to a group of
