@@ -9,7 +9,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/smw1218/sour/logger"
 	"github.com/smw1218/sour/routes"
 )
 
@@ -58,9 +57,7 @@ func New(cfg Config) *Metrics {
 		cfg.Buckets = prometheus.DefBuckets
 	}
 	if cfg.HandlerLabel == nil {
-		cfg.HandlerLabel = func(rte routes.Route) string {
-			return logger.HandlerName(rte.HandlerName)
-		}
+		cfg.HandlerLabel = routes.Route.ShortHandlerName
 	}
 	if cfg.Path == "" {
 		cfg.Path = "/metrics"

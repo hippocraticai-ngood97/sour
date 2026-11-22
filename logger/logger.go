@@ -6,7 +6,6 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -50,7 +49,7 @@ func NewLoggerMiddleware(log *slog.Logger) routes.Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handlerLogger := log
 			if rte, ok := routes.RouteFromContext(r.Context()); ok {
-				handlerLogger = log.With("hand", HandlerName(rte.HandlerName))
+				handlerLogger = log.With("hand", rte.ShortHandlerName())
 			}
 			r = r.WithContext(SetContextLogger(r.Context(), handlerLogger))
 			start := time.Now()
@@ -60,18 +59,4 @@ func NewLoggerMiddleware(log *slog.Logger) routes.Middleware {
 			handlerLogger.Info(endpoint, "tm", latency)
 		})
 	})
-}
-
-// HandlerName makes the handler names shorter and readable ala:
-// github.com/smw1218/sour/cmd/test-service/te.(*TEHandlers).Test-fm -> te.Test
-// github.com/smw1218/sour/cmd/test-service/te.TopLevel -> te.TopLevel
-func HandlerName(fullType string) string {
-	slashed := strings.Split(fullType, "/")
-	last := slashed[len(slashed)-1]
-	last = strings.TrimSuffix(last, "-fm")
-	dotted := strings.Split(last, ".")
-	if len(dotted) <= 2 {
-		return last
-	}
-	return fmt.Sprintf("%s.%s", dotted[0], strings.Join(dotted[2:], "."))
 }

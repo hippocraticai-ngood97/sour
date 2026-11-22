@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 // Middleware wraps an http.Handler, returning a new http.Handler that
@@ -58,6 +59,20 @@ type Route struct {
 	// HandlerName is the fully qualified name of the route's handler,
 	// e.g. github.com/org/proj/foo.(*FooHandlers).Get-fm
 	HandlerName string
+}
+
+// ShortHandlerName makes the handler name shorter and readable ala:
+// github.com/smw1218/sour/cmd/test-service/te.(*TEHandlers).Test-fm -> te.Test
+// github.com/smw1218/sour/cmd/test-service/te.TopLevel -> te.TopLevel
+func (rte Route) ShortHandlerName() string {
+	slashed := strings.Split(rte.HandlerName, "/")
+	last := slashed[len(slashed)-1]
+	last = strings.TrimSuffix(last, "-fm")
+	dotted := strings.Split(last, ".")
+	if len(dotted) <= 2 {
+		return last
+	}
+	return fmt.Sprintf("%s.%s", dotted[0], strings.Join(dotted[2:], "."))
 }
 
 type routeContextKey struct{}
