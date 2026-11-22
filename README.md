@@ -8,11 +8,14 @@ Sour's helpers encourage using this [project structure](https://www.scottwhite.d
 ```
 mkdir <your project>; cd <your project>
 go mod init <your module>
+go get github.com/smw1218/sour@latest
 go install github.com/smw1218/sour@latest
 # service name is "music"
 sour service --name music
 # domain name is "Albums", added to the "music" service
 sour service domain --name music --domain Albums
+go mod tidy
+go run cmd/music-service/main.go
 ```
 
 This generates:
