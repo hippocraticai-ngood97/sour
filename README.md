@@ -78,11 +78,10 @@ Strong opinions weakly held :D
 * Error responses should be `{"code":500 "message":"Internal error"}` where code mirrors the HTTP response.
 * REST endpoints should return a single type. That type is guaranteed to be valid with a 200 response. Errors must respond with non-2xx.
 * Version bumps should be restricted to only backwards incompatible changes. This should happen very infrequently or you're doing something wrong.
-* The whole API is versioned for any change (ala Facebook).
+* The whole API is versioned for any incompatible change (ala Facebook).
 * OpenAPI code generation sucks, don't ever use it. OpenAPI documentation is pretty nice.
 * Each service runs on it's own port for easy local development
-* Gin works a bit better than the stdlib
-* Route hanlders should be named methods on a struct that contains the dependencies
+* Route handlers should be named methods on a struct that contains the dependencies
     * Closures capturing the dependencies into scope is a mess and hard to read/debug
     * Dependencies are initialized at boot and injected into individual structs that have handler methods
     * Each struct can have multiple handlers for domain-based organization
