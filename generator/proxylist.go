@@ -21,7 +21,7 @@ func (sd *ServiceData) modifyProxyList(filename string) error {
 	}
 
 	// Add new import
-	importPath := fmt.Sprintf("github.com/smw1218/sour/cmd/%s-service/app", sd.ServiceName)
+	importPath := fmt.Sprintf("%s/cmd/%s-service/app", sd.Package, sd.ServiceName)
 	addImport(node, sd.PackageAlias(), importPath)
 
 	// Modify AllServices slice
