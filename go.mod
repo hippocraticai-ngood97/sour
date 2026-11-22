@@ -3,7 +3,7 @@ module github.com/smw1218/sour
 go 1.23.3
 
 require (
-	github.com/lmittmann/tint v1.0.7
+	github.com/lmittmann/tint v1.2.1
 	github.com/spf13/cobra v1.8.1
 )
 
