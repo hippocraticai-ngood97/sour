@@ -3,7 +3,7 @@ package service
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/smw1218/sour/response"
 )
 
 var (
@@ -18,8 +18,8 @@ func init() {
 	}
 }
 
-func BuildInfo(c *gin.Context) {
-	c.JSON(http.StatusOK, map[string]string{
+func BuildInfo(w http.ResponseWriter, r *http.Request) {
+	response.JSON(w, http.StatusOK, map[string]string{
 		"version":   Version,
 		"builder":   Builder,
 		"buildTime": BuildTime,

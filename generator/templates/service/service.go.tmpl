@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/smw1218/sour/routes"
 	"github.com/smw1218/sour/service"
 )
 
@@ -41,6 +41,6 @@ func (ts *{{.ServiceType}}) Setup() error {
 // Code in here should be careful not to derefernce struct fields
 // that may be null. It is expected to dereference methods because
 // methods exist on nil and zero-value types.
-func (ts *{{.ServiceType}}) RegisterRoutes(router gin.IRouter) {
+func (ts *{{.ServiceType}}) RegisterRoutes(router routes.Router) {
 	
 }

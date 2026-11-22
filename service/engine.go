@@ -4,31 +4,53 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 
-	"github.com/gin-gonic/gin"
 	"github.com/smw1218/sour/logger"
 	"github.com/smw1218/sour/response"
+	"github.com/smw1218/sour/routes"
 )
 
-func Engine(log *slog.Logger, svc ServiceInterface) *gin.Engine {
-	// gin debug mode isn't really useful
-	//gin.SetMode(gin.ReleaseMode)
-	e := gin.New()
-	e.NoRoute(NotFoundHandler)
-	e.GET(fmt.Sprintf("/%v/version", svc.LongName()), BuildInfo)
-	e.GET(fmt.Sprintf("/%v/health", svc.LongName()), HealthHandler)
-	e.Use(
+// NewRouter creates the root router for a service with the standard
+// version and health endpoints, logging, and panic recovery.
+func NewRouter(log *slog.Logger, svc ServiceInterface) *routes.Mux {
+	m := routes.NewMux()
+	m.NotFound(http.HandlerFunc(NotFoundHandler))
+	m.GET(fmt.Sprintf("/%v/version", svc.LongName()), BuildInfo)
+	m.GET(fmt.Sprintf("/%v/health", svc.LongName()), HealthHandler)
+	m.Use(
 		logger.NewLoggerMiddleware(log),
-		gin.Recovery())
+		Recovery())
 	// TODO add monitoring etc
 
-	return e
+	return m
 }
 
-func NotFoundHandler(c *gin.Context) {
-	response.NotFound(c, "")
+func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
+	response.NotFound(w, "")
 }
 
-func HealthHandler(c *gin.Context) {
-	c.Data(http.StatusOK, "applicaiton/json", []byte(`{"status":"up"}`))
+func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"status":"up"}`))
+}
+
+// Recovery logs panics from downstream handlers and responds with a 500.
+func Recovery() routes.Middleware {
+	return routes.MiddlewareFunc(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				rec := recover()
+				if rec == nil {
+					return
+				}
+				if rec == http.ErrAbortHandler {
+					panic(rec)
+				}
+				logger.Get(r.Context()).Error("Recovered from panic", "panic", rec, "stack", string(debug.Stack()))
+				response.NewError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)).Respond(w)
+			}()
+			next.ServeHTTP(w, r)
+		})
+	})
 }

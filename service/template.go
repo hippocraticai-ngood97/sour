@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/smw1218/sour/routes"
 )
 
 // ServiceInterface will be used in two specific ways to control the
@@ -11,12 +11,12 @@ import (
 // RegisterRoutes and DefaultPort to find out where each endpoint should
 // be routed. This means that RegisterRoutes must not dereference any nil
 // pointers that my be needed from calling Setup. Typically, this not a
-// problem because the gin.HandlerFuncs will exist on a nil pointer and
+// problem because handler methods will exist on a nil pointer and
 // since the local proxy will never actually call the method, then nothing
 // blows up.
 type ServiceInterface interface {
 	Setup() error
-	RegisterRoutes(gin.IRouter)
+	RegisterRoutes(routes.Router)
 	Shutdown() error
 	Name() string
 	LongName() string

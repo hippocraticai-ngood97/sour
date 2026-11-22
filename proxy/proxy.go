@@ -6,13 +6,13 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/gin-gonic/gin"
+	"github.com/smw1218/sour/routes"
 	"github.com/smw1218/sour/service"
 )
 
 type ServiceProxy struct {
 	services []service.ServiceInterface
-	engine   *gin.Engine
+	mux      *routes.Mux
 }
 
 // NewProxy takes the full list of services and will create a reverse proxy
@@ -25,29 +25,29 @@ type ServiceProxy struct {
 // ServiceProxy is an http.Handler and is meant to be used with an http.Servers
 func NewProxy(services []service.ServiceInterface, serviceHosts map[string]string) (*ServiceProxy, error) {
 	hpl := hostPortLookup(serviceHosts)
-	proxyEngine := gin.New()
+	proxyMux := routes.NewMux()
 	for _, svc := range services {
-		tmpengine := gin.New()
-		svc.RegisterRoutes(tmpengine)
+		svcMux := routes.NewMux()
+		svc.RegisterRoutes(svcMux)
 		destURL, err := hpl.Get(svc.Name(), svc.DefaultPort())
 		if err != nil {
 			return nil, fmt.Errorf("error processing destination url for %v: %w", svc.Name(), err)
 		}
-		serviceProxy := NewGinReverseProxy(destURL)
-		for _, rte := range tmpengine.Routes() {
-			proxyEngine.Handle(rte.Method, rte.Path, serviceProxy.HandlerFunc)
+		serviceProxy := httputil.NewSingleHostReverseProxy(destURL)
+		for _, rte := range svcMux.Routes() {
+			proxyMux.Handle(rte.Method, rte.Path, serviceProxy)
 		}
 	}
 
 	sp := &ServiceProxy{
 		services: services,
-		engine:   proxyEngine,
+		mux:      proxyMux,
 	}
 	return sp, nil
 }
 
 func (sp *ServiceProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	sp.engine.ServeHTTP(rw, req)
+	sp.mux.ServeHTTP(rw, req)
 }
 
 type hostPortLookup map[string]string
@@ -62,18 +62,4 @@ func (hpl hostPortLookup) Get(service string, defaultPort int) (*url.URL, error)
 		urlString = fmt.Sprintf("http://localhost:%d", defaultPort)
 	}
 	return url.Parse(urlString)
-}
-
-func NewGinReverseProxy(destURL *url.URL) *GinReverseProxy {
-	return &GinReverseProxy{httputil.NewSingleHostReverseProxy(destURL)}
-}
-
-// GinReverseProxy calls a httputil.NewSingleHostReverseProxy from
-// the HandlerFunc that matches the signature for a gin.HandlerFunc
-type GinReverseProxy struct {
-	proxy *httputil.ReverseProxy
-}
-
-func (grp *GinReverseProxy) HandlerFunc(c *gin.Context) {
-	grp.proxy.ServeHTTP(c.Writer, c.Request)
 }

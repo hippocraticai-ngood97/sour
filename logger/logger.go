@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/lmittmann/tint"
 	"github.com/smw1218/sour/env"
+	"github.com/smw1218/sour/routes"
 )
 
 func SetupDefaultSlog(serviceName string) *slog.Logger {
@@ -44,24 +45,21 @@ func SetContextLogger(ctx context.Context, newLogger *slog.Logger) context.Conte
 	return context.WithValue(ctx, contextLoggerKey, newLogger)
 }
 
-func SetContextLoggerGin(c *gin.Context, newLogger *slog.Logger) {
-	c.Request = c.Request.WithContext(SetContextLogger(c.Request.Context(), newLogger))
-}
-
-func Gin(c *gin.Context) *slog.Logger {
-	return Get(c.Request.Context())
-}
-
-func NewLoggerMiddleware(log *slog.Logger) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		handlerLogger := log.With("hand", HandlerName(c.HandlerName()))
-		SetContextLoggerGin(c, handlerLogger)
-		start := time.Now()
-		c.Next()
-		latency := time.Since(start)
-		endpoint := fmt.Sprintf("%v %v", c.Request.Method, c.Request.URL)
-		handlerLogger.Info(endpoint, "tm", latency)
-	}
+func NewLoggerMiddleware(log *slog.Logger) routes.Middleware {
+	return routes.MiddlewareFunc(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handlerLogger := log
+			if rte, ok := routes.RouteFromContext(r.Context()); ok {
+				handlerLogger = log.With("hand", HandlerName(rte.HandlerName))
+			}
+			r = r.WithContext(SetContextLogger(r.Context(), handlerLogger))
+			start := time.Now()
+			next.ServeHTTP(w, r)
+			latency := time.Since(start)
+			endpoint := fmt.Sprintf("%v %v", r.Method, r.URL)
+			handlerLogger.Info(endpoint, "tm", latency)
+		})
+	})
 }
 
 // HandlerName makes the handler names shorter and readable ala:

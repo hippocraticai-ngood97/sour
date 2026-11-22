@@ -19,14 +19,14 @@ func main() {
 	slogger := logger.SetupDefaultSlog(svc.Name())
 	slog.SetDefault(slogger)
 
-	engine := service.Engine(slogger, svc)
+	router := service.NewRouter(slogger, svc)
 	err := svc.Setup()
 	if err != nil {
 		slog.Error("Failed Service Setup", "error", err)
 		os.Exit(1)
 	}
 
-	svc.RegisterRoutes(engine)
-	service.Run(context.Background(), svc, engine)
+	svc.RegisterRoutes(router)
+	service.Run(context.Background(), svc, router)
 	slog.Info(fmt.Sprintf("%v exiting", svc.LongName()))
 }
