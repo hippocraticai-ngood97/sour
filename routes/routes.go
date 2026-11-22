@@ -50,7 +50,8 @@ type Router interface {
 	Use(mw ...Middleware)
 }
 
-// Route describes a registered route.
+// Route describes a registered route. For requests handled by the
+// NotFound handler, only HandlerName is set.
 type Route struct {
 	Method string
 	Path   string
@@ -99,7 +100,7 @@ func (m *Mux) Routes() []Route {
 
 func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if _, pattern := m.serveMux.Handler(r); pattern == "" {
-		rte := Route{Method: r.Method, Path: r.URL.Path, HandlerName: handlerName(m.notFound)}
+		rte := Route{HandlerName: handlerName(m.notFound)}
 		withRoute(rte, Chain(m.notFound, m.middleware...)).ServeHTTP(w, r)
 		return
 	}
