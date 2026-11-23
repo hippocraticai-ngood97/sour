@@ -89,7 +89,7 @@ func Run(ctx context.Context, si ServiceInterface, router *Router) {
 	}
 
 	slog.Info("Calling Service Shutdown")
-	err = si.Shutdown()
+	err = si.Shutdown(shutdownCtx)
 	if err != nil {
 		slog.Error("Failed service Shutdown", "error", err)
 	}

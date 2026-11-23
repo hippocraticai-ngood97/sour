@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -16,10 +17,10 @@ type testService struct {
 	shutdown func() error
 }
 
-func (ts *testService) Setup() error                 { return nil }
+func (ts *testService) Setup(context.Context) error  { return nil }
 func (ts *testService) RegisterRoutes(routes.Router) {}
 
-func (ts *testService) Shutdown() error {
+func (ts *testService) Shutdown(context.Context) error {
 	if ts.shutdown != nil {
 		return ts.shutdown()
 	}

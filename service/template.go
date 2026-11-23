@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/smw1218/sour/routes"
 )
 
@@ -15,9 +17,9 @@ import (
 // since the local proxy will never actually call the method, then nothing
 // blows up.
 type ServiceInterface interface {
-	Setup() error
+	Setup(ctx context.Context) error
 	RegisterRoutes(routes.Router)
-	Shutdown() error
+	Shutdown(ctx context.Context) error
 	Name() string
 	LongName() string
 	DefaultPort() int
@@ -47,6 +49,6 @@ func (t *Template) DefaultPort() int {
 	return t.Port
 }
 
-func (t *Template) Shutdown() error {
+func (t *Template) Shutdown(ctx context.Context) error {
 	return nil
 }

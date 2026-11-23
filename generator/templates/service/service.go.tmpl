@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	"github.com/smw1218/sour/routes"
 	"github.com/smw1218/sour/service"
 )
@@ -31,7 +33,7 @@ func New{{.ServiceType}}() *{{.ServiceType}} {
 
 // Setup initialize the service dependencies here
 // returning error will cause the service to exit with code 1
-func (ts *{{.ServiceType}}) Setup() error {
+func (ts *{{.ServiceType}}) Setup(ctx context.Context) error {
 	return nil
 }
 
