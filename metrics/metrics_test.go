@@ -23,7 +23,7 @@ func TestMiddlewareLabels(t *testing.T) {
 	mux := routes.NewMux()
 	mux.Use(m)
 	ih := &itemHandlers{}
-	mux.GET("/items/{id}", ih.Get)
+	mux.HandleFunc("GET /items/{id}", ih.Get)
 
 	for _, path := range []string{"/items/1", "/items/2", "/nope"} {
 		mux.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, path, nil))
@@ -32,8 +32,8 @@ func TestMiddlewareLabels(t *testing.T) {
 	expected := `
 # HELP http_requests_total Total number of HTTP requests.
 # TYPE http_requests_total counter
-http_requests_total{code="404",handler="http.NotFound",method="",path=""} 1
-http_requests_total{code="418",handler="metrics.Get",method="GET",path="/items/{id}"} 2
+http_requests_total{code="404",handler="http.NotFound",pattern=""} 1
+http_requests_total{code="418",handler="metrics.Get",pattern="GET /items/{id}"} 2
 `
 	if err := testutil.GatherAndCompare(reg, strings.NewReader(expected), "http_requests_total"); err != nil {
 		t.Fatal(err)

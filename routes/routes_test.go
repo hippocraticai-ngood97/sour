@@ -30,15 +30,19 @@ func serve(m *Mux, method, path string) *httptest.ResponseRecorder {
 
 func TestMiddlewareOrder(t *testing.T) {
 	m := NewMux()
-	m.GET("/before", writeBody("before"))
+	m.HandleFunc("GET /before", writeBody("before"))
 	m.Use(tagMiddleware("a"), tagMiddleware("b"))
-	m.GET("/items/{id}", func(w http.ResponseWriter, r *http.Request) {
+	m.HandleFunc("GET /items/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("item " + r.PathValue("id")))
 	})
+	m.HandleFunc("GET /special", writeBody("special"), tagMiddleware("c"), tagMiddleware("d"))
+	m.HandleFunc("GET /plain", writeBody("plain"))
 
 	cases := map[string]string{
 		"/before":  "before",
 		"/items/7": "a>b>item 7",
+		"/special": "a>b>c>d>special",
+		"/plain":   "a>b>plain",
 	}
 	for path, expected := range cases {
 		rec := serve(m, http.MethodGet, path)
@@ -60,7 +64,7 @@ func TestNotFound(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("custom"))
 	}))
-	m.GET("/exists", writeBody("ok"))
+	m.HandleFunc("GET /exists", writeBody("ok"))
 
 	for _, req := range [][2]string{{http.MethodGet, "/missing"}, {http.MethodPost, "/exists"}} {
 		rec := serve(m, req[0], req[1])
@@ -79,14 +83,14 @@ func TestRoutesAndRouteContext(t *testing.T) {
 			next.ServeHTTP(w, r)
 		})
 	}))
-	m.POST("/v1/things", namedHandler)
+	m.HandleFunc("POST /v1/things", namedHandler)
 
 	routes := m.Routes()
-	if len(routes) != 1 || routes[0].Method != http.MethodPost || routes[0].Path != "/v1/things" {
+	if len(routes) != 1 || routes[0].Pattern != "POST /v1/things" {
 		t.Fatalf("unexpected routes %+v", routes)
 	}
 	serve(m, http.MethodPost, "/v1/things")
-	if seen.Path != "/v1/things" || !strings.HasSuffix(seen.HandlerName, "routes.namedHandler") {
+	if seen.Pattern != "POST /v1/things" || !strings.HasSuffix(seen.HandlerName, "routes.namedHandler") {
 		t.Fatalf("unexpected route in context %+v", seen)
 	}
 }

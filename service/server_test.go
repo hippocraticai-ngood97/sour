@@ -34,11 +34,15 @@ func portAvailable(port int) bool {
 	return true
 }
 
+// testClient doesn't pool connections; a pooled client can leave an unused
+// connection open, which makes http.Server.Shutdown wait 5s before closing it.
+var testClient = &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
+
 func waitForServer(t *testing.T, url string) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for time.Now().Before(deadline) {
-		resp, err := http.Get(url)
+		resp, err := testClient.Get(url)
 		if err == nil {
 			resp.Body.Close()
 			return
@@ -49,7 +53,7 @@ func waitForServer(t *testing.T, url string) {
 }
 
 func get(url string) (int, string, error) {
-	resp, err := http.Get(url)
+	resp, err := testClient.Get(url)
 	if err != nil {
 		return 0, "", err
 	}
@@ -77,7 +81,7 @@ func TestRunGracefulShutdownOrder(t *testing.T) {
 		Registry: prometheus.NewRegistry(),
 		Port:     metricsPort,
 	}))
-	router.GET("/slow", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /slow", func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(300 * time.Millisecond)
 		w.Write([]byte("done"))
 	})

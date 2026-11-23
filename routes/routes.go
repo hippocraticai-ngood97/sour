@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -35,27 +36,23 @@ func Chain(h http.Handler, mw ...Middleware) http.Handler {
 }
 
 // Router is the interface services use to register their routes.
-// Paths use [http.ServeMux] pattern syntax (e.g. "/items/{id}" or
-// "/files/{path...}"). An empty method matches all methods.
+// Patterns use [http.ServeMux] syntax, e.g. "GET /items/{id}" or
+// "/files/{path...}"; a pattern without a method matches all methods.
 //
-// Middleware added with Use only applies to routes registered after
-// the call to Use.
+// Middleware passed to Handle or HandleFunc applies only to that route,
+// and runs after any middleware added with Use. Middleware added with
+// Use only applies to routes registered after the call to Use.
 type Router interface {
-	Handle(method, path string, handler http.Handler)
-	HandleFunc(method, path string, handler http.HandlerFunc)
-	GET(path string, handler http.HandlerFunc)
-	POST(path string, handler http.HandlerFunc)
-	PUT(path string, handler http.HandlerFunc)
-	PATCH(path string, handler http.HandlerFunc)
-	DELETE(path string, handler http.HandlerFunc)
+	Handle(pattern string, handler http.Handler, mw ...Middleware)
+	HandleFunc(pattern string, handler http.HandlerFunc, mw ...Middleware)
 	Use(mw ...Middleware)
 }
 
 // Route describes a registered route. For requests handled by the
 // NotFound handler, only HandlerName is set.
 type Route struct {
-	Method string
-	Path   string
+	// Pattern is the pattern the route was registered with.
+	Pattern string
 	// HandlerName is the fully qualified name of the route's handler,
 	// e.g. github.com/org/proj/foo.(*FooHandlers).Get-fm
 	HandlerName string
@@ -128,42 +125,17 @@ func withRoute(rte Route, h http.Handler) http.Handler {
 	})
 }
 
-func (m *Mux) Handle(method, path string, handler http.Handler) {
+func (m *Mux) Handle(pattern string, handler http.Handler, mw ...Middleware) {
 	rte := Route{
-		Method:      method,
-		Path:        path,
+		Pattern:     pattern,
 		HandlerName: handlerName(handler),
 	}
-	pattern := path
-	if method != "" {
-		pattern = method + " " + pattern
-	}
-	m.serveMux.Handle(pattern, withRoute(rte, Chain(handler, m.middleware...)))
+	m.serveMux.Handle(pattern, withRoute(rte, Chain(handler, slices.Concat(m.middleware, mw)...)))
 	m.routes = append(m.routes, rte)
 }
 
-func (m *Mux) HandleFunc(method, path string, handler http.HandlerFunc) {
-	m.Handle(method, path, handler)
-}
-
-func (m *Mux) GET(path string, handler http.HandlerFunc) {
-	m.Handle(http.MethodGet, path, handler)
-}
-
-func (m *Mux) POST(path string, handler http.HandlerFunc) {
-	m.Handle(http.MethodPost, path, handler)
-}
-
-func (m *Mux) PUT(path string, handler http.HandlerFunc) {
-	m.Handle(http.MethodPut, path, handler)
-}
-
-func (m *Mux) PATCH(path string, handler http.HandlerFunc) {
-	m.Handle(http.MethodPatch, path, handler)
-}
-
-func (m *Mux) DELETE(path string, handler http.HandlerFunc) {
-	m.Handle(http.MethodDelete, path, handler)
+func (m *Mux) HandleFunc(pattern string, handler http.HandlerFunc, mw ...Middleware) {
+	m.Handle(pattern, handler, mw...)
 }
 
 func (m *Mux) Use(mw ...Middleware) {

@@ -36,9 +36,9 @@ type Config struct {
 }
 
 // Metrics is a [routes.Middleware] that records request counts and
-// durations labeled by handler, method, path, and status code. The
-// method and path labels are the route's registered pattern, not the
-// raw request values.
+// durations labeled by handler, pattern, and status code. The pattern
+// label is the route's registered pattern (e.g. "GET /items/{id}"), not
+// the raw request values.
 type Metrics struct {
 	cfg      Config
 	requests *prometheus.CounterVec
@@ -47,7 +47,7 @@ type Metrics struct {
 
 var _ routes.Middleware = (*Metrics)(nil)
 
-var labels = []string{"handler", "method", "path", "code"}
+var labels = []string{"handler", "pattern", "code"}
 
 // New creates and registers the HTTP metrics. If identical metrics were
 // already registered (e.g. by an earlier call to New), those are reused.
@@ -124,7 +124,7 @@ func (m *Metrics) Wrap(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 
 		rte, _ := routes.RouteFromContext(r.Context())
-		lv := []string{m.cfg.HandlerLabel(rte), rte.Method, rte.Path, strconv.Itoa(rec.code())}
+		lv := []string{m.cfg.HandlerLabel(rte), rte.Pattern, strconv.Itoa(rec.code())}
 		m.requests.WithLabelValues(lv...).Inc()
 		m.duration.WithLabelValues(lv...).Observe(time.Since(start).Seconds())
 	})

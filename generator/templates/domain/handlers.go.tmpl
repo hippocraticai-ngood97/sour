@@ -21,7 +21,7 @@ type {{.DomainName}}Handlers struct {
 // Hello example handler method; delete or modify as you like. 
 // Add these functions in app.{{.ServiceType}}.RegisterRoutes:
 //
-//	router.GET("/hello", {{.DomainPackage}}.Hello)
+//	router.HandleFunc("GET /hello", {{.DomainPackage}}.Hello)
 func ({{.DomainInitials}}h *{{.DomainName}}Handlers) Hello(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, map[string]string{"hello": "world"})
 }

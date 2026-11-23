@@ -55,8 +55,8 @@ func NewRouter(log *slog.Logger, svc ServiceInterface, opts ...RouterOption) *Ro
 
 	r := &Router{Mux: routes.NewMux()}
 	r.NotFound(http.HandlerFunc(NotFoundHandler))
-	r.GET(fmt.Sprintf("/%v/version", svc.LongName()), BuildInfo)
-	r.GET(fmt.Sprintf("/%v/health", svc.LongName()), HealthHandler)
+	r.HandleFunc(fmt.Sprintf("GET /%v/version", svc.LongName()), BuildInfo)
+	r.HandleFunc(fmt.Sprintf("GET /%v/health", svc.LongName()), HealthHandler)
 	middleware := []routes.Middleware{logger.NewLoggerMiddleware(log)}
 	if rc.metrics != nil {
 		r.metrics = metrics.New(*rc.metrics)

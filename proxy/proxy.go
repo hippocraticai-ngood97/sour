@@ -35,7 +35,7 @@ func NewProxy(services []service.ServiceInterface, serviceHosts map[string]strin
 		}
 		serviceProxy := httputil.NewSingleHostReverseProxy(destURL)
 		for _, rte := range svcMux.Routes() {
-			proxyMux.Handle(rte.Method, rte.Path, serviceProxy)
+			proxyMux.Handle(rte.Pattern, serviceProxy)
 		}
 	}
 
