@@ -31,8 +31,8 @@ cmd/
 ```
 
 Each service runs on its own port. Run a service with `go run ./cmd/music-service` and the proxy with
-`go run ./cmd/local-proxy` (default port 8080, use `--port` to change it, or `--<service name> <url>` to
-send a service's routes somewhere other than localhost).
+`go run ./cmd/local-proxy` (port 8080 by default). To change the port, or to send a service's routes
+somewhere other than localhost, edit `cmd/local-proxy/main.go`.
 
 Prometheus metrics for each service are served at `/metrics` on a separate port (the service port + 100 by
 default) so they aren't exposed with the service's public routes.

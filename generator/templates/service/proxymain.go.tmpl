@@ -1,11 +1,28 @@
 package main
 
 import (
+	"context"
+	"log/slog"
+	"os"
+
 	"{{.Package}}/cmd/local-proxy/servicelist"
 	"github.com/smw1218/sour/proxy"
 )
 
 func main() {
-	p := proxy.NewProxyCLI(servicelist.AllServices)
-	p.Execute()
+	// map of service name to a URL to send that service's routes to
+	// instead of localhost, e.g. "music": "https://music.staging.example.com"
+	overrides := map[string]string{}
+
+	p, err := proxy.NewProxy(servicelist.AllServices, overrides)
+	if err != nil {
+		slog.Error("Failed creating proxy", "error", err)
+		os.Exit(1)
+	}
+
+	err = p.Run(context.Background())
+	if err != nil {
+		slog.Error("Proxy exited", "error", err)
+		os.Exit(1)
+	}
 }

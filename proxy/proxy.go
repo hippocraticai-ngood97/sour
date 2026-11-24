@@ -1,18 +1,28 @@
 package proxy
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/smw1218/sour/project"
 	"github.com/smw1218/sour/routes"
 	"github.com/smw1218/sour/service"
 )
 
+// ServiceProxy is a reverse proxy that routes each service's routes to
+// that service. It is an http.Handler, or can listen on its own with Run.
 type ServiceProxy struct {
-	services []service.ServiceInterface
-	mux      *routes.Mux
+	// Port that Run listens on. Defaults to project.DefaultStartingPort.
+	Port int
+	// Mux holds the proxied routes and can be further configured. The
+	// proxied routes are already registered, so middleware added with
+	// Mux.Use only applies to routes added afterward.
+	Mux *routes.Mux
 }
 
 // NewProxy takes the full list of services and will create a reverse proxy
@@ -22,7 +32,6 @@ type ServiceProxy struct {
 // This is particularly useful to map app services to a hosted environment
 // except the one under development. This allows local iteration with other
 // service calls going to the cloud. Auth would have to be preserved of course.
-// ServiceProxy is an http.Handler and is meant to be used with an http.Servers
 func NewProxy(services []service.ServiceInterface, serviceHosts map[string]string) (*ServiceProxy, error) {
 	hpl := hostPortLookup(serviceHosts)
 	proxyMux := routes.NewMux()
@@ -39,15 +48,32 @@ func NewProxy(services []service.ServiceInterface, serviceHosts map[string]strin
 		}
 	}
 
-	sp := &ServiceProxy{
-		services: services,
-		mux:      proxyMux,
-	}
-	return sp, nil
+	return &ServiceProxy{
+		Port: project.DefaultStartingPort,
+		Mux:  proxyMux,
+	}, nil
 }
 
 func (sp *ServiceProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	sp.mux.ServeHTTP(rw, req)
+	sp.Mux.ServeHTTP(rw, req)
+}
+
+// Run listens on Port until ctx is canceled.
+func (sp *ServiceProxy) Run(ctx context.Context) error {
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", sp.Port),
+		Handler: sp,
+	}
+	go func() {
+		<-ctx.Done()
+		srv.Shutdown(context.WithoutCancel(ctx))
+	}()
+	slog.Info(fmt.Sprintf("Running Proxy on %v", srv.Addr))
+	err := srv.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }
 
 type hostPortLookup map[string]string
