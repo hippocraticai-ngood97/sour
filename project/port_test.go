@@ -223,7 +223,7 @@ func TestGetLastUsedPort_WalkError(t *testing.T) {
 	}
 }
 
-func TestGetPortFromMain(t *testing.T) {
+func TestGetPortFromFile(t *testing.T) {
 	fsys := fstest.MapFS{
 		"script-service/app/service.go": &fstest.MapFile{
 			Data: []byte("package app\n\nconst (\n\tport = 4001\n)\n"),
@@ -233,7 +233,7 @@ func TestGetPortFromMain(t *testing.T) {
 		},
 	}
 
-	got, err := GetPortFromMain(fsys, "script-service/app/service.go")
+	got, err := getPortFromFile(fsys, "script-service/app/service.go")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -241,7 +241,7 @@ func TestGetPortFromMain(t *testing.T) {
 		t.Fatalf("expected 4001, got %d", got)
 	}
 
-	got, err = GetPortFromMain(fsys, "empty-service/app/service.go")
+	got, err = getPortFromFile(fsys, "empty-service/app/service.go")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -249,7 +249,7 @@ func TestGetPortFromMain(t *testing.T) {
 		t.Fatalf("expected 0, got %d", got)
 	}
 
-	if _, err := GetPortFromMain(fsys, "missing/app/service.go"); err == nil {
+	if _, err := getPortFromFile(fsys, "missing/app/service.go"); err == nil {
 		t.Fatal("expected error for missing file, got nil")
 	}
 }

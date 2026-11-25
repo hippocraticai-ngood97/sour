@@ -67,13 +67,6 @@ func getLastUsedPort(fileSystem fs.FS) (int, error) {
 
 var portLineRe = regexp.MustCompile(`^\s*(?:const\s+)?port\s*=\s*(\d+)\b`)
 
-// GetPortFromMain reads a service port assignment from the given file.
-//
-// Kept under its original name for backwards compatibility.
-func GetPortFromMain(fileSystem fs.FS, filePath string) (int, error) {
-	return getPortFromFile(fileSystem, filePath)
-}
-
 func getPortFromFile(fileSystem fs.FS, filePath string) (int, error) {
 	f, err := fileSystem.Open(filePath)
 	if err != nil {
